@@ -1,0 +1,65 @@
+# --- General ---
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Editor / OS specific ---
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+*.~undo-tree*
+*.iml
+
+# --- Terraform ---
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+override.tf
+override.tf.json
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+
+# --- Packer ---
+packer_cache/
+*.pkrvars.hcl
+*.pkrvars.json
+*.auto.pkrvars.hcl
+*.pkrlog
+
+# --- Secrets / Environment files ---
+.env
+.env.*
+*.secrets
+*.secret
+*.key
+*.pem
+*.crt
+*.cer
+*.enc
+
+# --- Python / Node / other ---
+__pycache__/
+*.pyc
+node_modules/
+dist/
+build/
+coverage/
+
+# --- OS User/Session-specific ---
+*.bak
+*.old
+*.orig
+*.rej
+*.sw?
+
+# --- Git ---
+!.gitignore
+
