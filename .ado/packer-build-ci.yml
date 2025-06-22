@@ -1,0 +1,182 @@
+# Azure DevOps Pipeline for Packer Build
+trigger:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - packer/
+    - .ado/packer-build-ci.yml
+
+pr: none
+
+variables:
+- name: packerVersion
+  value: '1.12.0'
+#- name: resourceGroupName
+#  value: 'rg-packer-images'
+#- name: storageAccountName
+#  value: 'stpackerimages$(Build.BuildId)'
+#- name: imageGalleryName
+#  value: 'gallery_packer_images'
+
+stages:
+- stage: ValidatePacker
+  displayName: 'Validate Packer Templates'
+  jobs:
+  - job: ValidateJob
+    displayName: 'Validate Packer Configuration'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: PackerTool@0
+      displayName: 'Install Packer'
+      inputs:
+        version: $(packerVersion)
+    
+    - script: |
+        echo "Validating Packer templates..."
+        find packer/ -name "*.pkr.hcl" -exec packer validate {} \;
+      displayName: 'Validate Packer Templates'
+      workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+#- stage: BuildImage
+#  displayName: 'Build Packer Image'
+#  dependsOn: ValidatePacker
+#  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'], 'Manual')))
+#  
+#  jobs:
+#  - job: PackerBuild
+#    displayName: 'Packer Build Job'
+#    pool:
+#      vmImage: 'ubuntu-latest'
+#    timeoutInMinutes: 120
+#    
+#    steps:
+#    - task: AzureCLI@2
+#      displayName: 'Create Resource Group'
+#      inputs:
+#        azureSubscription: 'azure-service-connection'
+#        scriptType: 'bash'
+#        scriptLocation: 'inlineScript'
+#        inlineScript: |
+#          az group create --name $(resourceGroupName) --location "East US" --tags Environment=Packer Purpose=ImageBuilding
+#    
+#    - task: AzureCLI@2
+#      displayName: 'Create Storage Account for Packer'
+#      inputs:
+#        azureSubscription: 'azure-service-connection'
+#        scriptType: 'bash'
+#        scriptLocation: 'inlineScript'
+#        inlineScript: |
+#          az storage account create \
+#            --name $(storageAccountName) \
+#            --resource-group $(resourceGroupName) \
+#            --location "East US" \
+#            --sku Standard_LRS \
+#            --kind StorageV2
+#    
+#    - task: PackerTool@0
+#      displayName: 'Install Packer'
+#      inputs:
+#        version: $(packerVersion)
+#    
+#    - task: AzureCLI@2
+#      displayName: 'Get Azure Credentials for Packer'
+#      inputs:
+#        azureSubscription: 'azure-service-connection'
+#        scriptType: 'bash'
+#        scriptLocation: 'inlineScript'
+#        addSpnToEnvironment: true
+#        inlineScript: |
+#          echo "##vso[task.setvariable variable=ARM_CLIENT_ID;issecret=false]$servicePrincipalId"
+#          echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET;issecret=true]$servicePrincipalKey"
+#          echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;issecret=false]$(az account show --query id -o tsv)"
+#          echo "##vso[task.setvariable variable=ARM_TENANT_ID;issecret=false]$tenantId"
+#    
+#    - script: |
+#        echo "Starting Packer build..."
+#        export PKR_VAR_resource_group_name="$(resourceGroupName)"
+#        export PKR_VAR_storage_account_name="$(storageAccountName)"
+#        export PKR_VAR_build_id="$(Build.BuildId)"
+#        export PKR_VAR_source_branch="$(Build.SourceBranchName)"
+#        
+#        packer build \
+#          -var "subscription_id=$(ARM_SUBSCRIPTION_ID)" \
+#          -var "client_id=$(ARM_CLIENT_ID)" \
+#          -var "client_secret=$(ARM_CLIENT_SECRET)" \
+#          -var "tenant_id=$(ARM_TENANT_ID)" \
+#          packer/ubuntu-web-server.pkr.hcl
+#      displayName: 'Run Packer Build'
+#      env:
+#        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+#        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+#        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+#        ARM_TENANT_ID: $(ARM_TENANT_ID)
+#    
+#    - task: AzureCLI@2
+#      displayName: 'Tag Generated Image'
+#      inputs:
+#        azureSubscription: 'azure-service-connection'
+#        scriptType: 'bash'
+#        scriptLocation: 'inlineScript'
+#        inlineScript: |
+#          # Find the created image
+#          IMAGE_ID=$(az image list --resource-group $(resourceGroupName) --query "[?starts_with(name, 'packer-ubuntu')].id" -o tsv | head -1)
+#          
+#          if [ ! -z "$IMAGE_ID" ]; then
+#            az tag create --resource-id "$IMAGE_ID" --tags \
+#              BuildId="$(Build.BuildId)" \
+#              BuildNumber="$(Build.BuildNumber)" \
+#              SourceBranch="$(Build.SourceBranchName)" \
+#              BuildDate="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+#            echo "Tagged image: $IMAGE_ID"
+#          else
+#            echo "No image found to tag"
+#          fi
+#    
+#    - task: PublishBuildArtifacts@1
+#      displayName: 'Publish Packer Logs'
+#      inputs:
+#        pathToPublish: 'packer/'
+#        artifactName: 'packer-artifacts'
+#      condition: always()
+#
+#- stage: CleanupResources
+#  displayName: 'Cleanup Temporary Resources'
+#  dependsOn: BuildImage
+#  condition: always()
+#  
+#  jobs:
+#  - job: Cleanup
+#    displayName: 'Cleanup Job'
+#    pool:
+#      vmImage: 'ubuntu-latest'
+#    
+#    steps:
+#    - task: AzureCLI@2
+#      displayName: 'Delete Temporary Storage Account'
+#      inputs:
+#        azureSubscription: 'azure-service-connection'
+#        scriptType: 'bash'
+#        scriptLocation: 'inlineScript'
+#        inlineScript: |
+#          if az storage account show --name $(storageAccountName) --resource-group $(resourceGroupName) &>/dev/null; then
+#            echo "Deleting temporary storage account..."
+#            az storage account delete --name $(storageAccountName) --resource-group $(resourceGroupName) --yes
+#          else
+#            echo "Storage account not found or already deleted"
+#          fi
+#      condition: always()
+
+# Example Packer template variables that can be passed
+# You would create packer/ubuntu-web-server.pkr.hcl with these variables:
+# - subscription_id
+# - client_id  
+# - client_secret
+# - tenant_id
+# - resource_group_name
+# - storage_account_name
+# - build_id
+# - source_branch
