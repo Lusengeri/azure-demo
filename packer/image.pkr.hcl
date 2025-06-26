@@ -7,7 +7,7 @@ source "azure-arm" "ubuntu" {
   image_publisher                   = "Canonical"
   image_sku                         = "22_04-lts"
   location                          = "South Africa North"
-  managed_image_name                = "DemoAppImage${timestamp()}"
+  managed_image_name                = "DemoAppImage${formatdate("YYYYMMDDhhmmss" , timestamp())}"
   managed_image_resource_group_name = var.resource_group_name
   os_type                           = "Linux"
   use_azure_cli_auth                = true
