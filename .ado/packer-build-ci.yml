@@ -37,10 +37,10 @@ stages:
     
     - script: |
         echo "Validating Packer templates..."
-        packer init packer/
-        find packer/ -name "*.pkr.hcl" -exec packer validate -var "resource_group_name=$(resourceGroupName)" {} \;
+        packer init ./
+        find ./ -name "*.pkr.hcl" -exec packer validate -var "resource_group_name=$(resourceGroupName)" {} \;
       displayName: 'Validate Packer Templates'
-      workingDirectory: '$(System.DefaultWorkingDirectory)'
+      workingDirectory: '$(System.DefaultWorkingDirectory)/packer'
 
 #- stage: BuildImage
 #  displayName: 'Build Packer Image'
