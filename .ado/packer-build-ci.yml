@@ -13,8 +13,8 @@ pr: none
 variables:
 - name: packerVersion
   value: '1.12.0'
-#- name: resourceGroupName
-#  value: 'rg-packer-images'
+- name: resourceGroupName
+  value: 'demo-app-resources'
 #- name: storageAccountName
 #  value: 'stpackerimages$(Build.BuildId)'
 #- name: imageGalleryName
@@ -37,7 +37,8 @@ stages:
     
     - script: |
         echo "Validating Packer templates..."
-        find packer/ -name "*.pkr.hcl" -exec packer validate {} \;
+        packer init packer/
+        find packer/ -name "*.pkr.hcl" -exec packer validate -var "resource_group_name=$(resourceGroupName)" {} \;
       displayName: 'Validate Packer Templates'
       workingDirectory: '$(System.DefaultWorkingDirectory)'
 
