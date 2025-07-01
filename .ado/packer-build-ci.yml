@@ -37,24 +37,24 @@ stages:
     
     - script: |
         echo "Validating Packer templates..."
-        packer init ./
-        find ./ -name "*.pkr.hcl" -exec packer validate -var "resource_group_name=$(resourceGroupName)" {} \;
+        packer init .
+        packer validate -var "resource_group_name=$(resourceGroupName)" .
       displayName: 'Validate Packer Templates'
       workingDirectory: '$(System.DefaultWorkingDirectory)/packer'
 
-#- stage: BuildImage
-#  displayName: 'Build Packer Image'
-#  dependsOn: ValidatePacker
-#  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'], 'Manual')))
-#  
-#  jobs:
-#  - job: PackerBuild
-#    displayName: 'Packer Build Job'
-#    pool:
-#      vmImage: 'ubuntu-latest'
-#    timeoutInMinutes: 120
-#    
-#    steps:
+- stage: BuildImage
+  displayName: 'Build Packer Image'
+  dependsOn: ValidatePacker
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'], 'Manual')))
+  
+  jobs:
+  - job: PackerBuild
+    displayName: 'Packer Build Job'
+    pool:
+      vmImage: 'ubuntu-latest'
+    timeoutInMinutes: 120
+    
+    steps:
 #    - task: AzureCLI@2
 #      displayName: 'Create Resource Group'
 #      inputs:
@@ -77,45 +77,44 @@ stages:
 #            --location "East US" \
 #            --sku Standard_LRS \
 #            --kind StorageV2
-#    
-#    - task: PackerTool@0
-#      displayName: 'Install Packer'
-#      inputs:
-#        version: $(packerVersion)
-#    
-#    - task: AzureCLI@2
-#      displayName: 'Get Azure Credentials for Packer'
-#      inputs:
-#        azureSubscription: 'azure-service-connection'
-#        scriptType: 'bash'
-#        scriptLocation: 'inlineScript'
-#        addSpnToEnvironment: true
-#        inlineScript: |
-#          echo "##vso[task.setvariable variable=ARM_CLIENT_ID;issecret=false]$servicePrincipalId"
-#          echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET;issecret=true]$servicePrincipalKey"
-#          echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;issecret=false]$(az account show --query id -o tsv)"
-#          echo "##vso[task.setvariable variable=ARM_TENANT_ID;issecret=false]$tenantId"
-#    
-#    - script: |
-#        echo "Starting Packer build..."
-#        export PKR_VAR_resource_group_name="$(resourceGroupName)"
-#        export PKR_VAR_storage_account_name="$(storageAccountName)"
-#        export PKR_VAR_build_id="$(Build.BuildId)"
-#        export PKR_VAR_source_branch="$(Build.SourceBranchName)"
-#        
-#        packer build \
-#          -var "subscription_id=$(ARM_SUBSCRIPTION_ID)" \
-#          -var "client_id=$(ARM_CLIENT_ID)" \
-#          -var "client_secret=$(ARM_CLIENT_SECRET)" \
-#          -var "tenant_id=$(ARM_TENANT_ID)" \
-#          packer/ubuntu-web-server.pkr.hcl
-#      displayName: 'Run Packer Build'
-#      env:
-#        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
-#        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-#        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
-#        ARM_TENANT_ID: $(ARM_TENANT_ID)
-#    
+    
+    - task: PackerTool@0
+      displayName: 'Install Packer'
+      inputs:
+        version: $(packerVersion)
+    
+    - task: AzureCLI@2
+      displayName: 'Get Azure Credentials for Packer'
+      inputs:
+        azureSubscription: 'Demo App Azure DevOps Connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        addSpnToEnvironment: true
+        inlineScript: |
+          echo "##vso[task.setvariable variable=ARM_CLIENT_ID;issecret=false]$servicePrincipalId"
+          echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET;issecret=true]$servicePrincipalKey"
+          echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;issecret=false]$(az account show --query id -o tsv)"
+          echo "##vso[task.setvariable variable=ARM_TENANT_ID;issecret=false]$tenantId"
+    
+    - script: |
+        echo "Starting Packer build..."
+        export PKR_VAR_resource_group_name="$(resourceGroupName)"
+        export PKR_VAR_build_id="$(Build.BuildId)"
+        export PKR_VAR_source_branch="$(Build.SourceBranchName)"
+        
+        packer build \
+          -var "subscription_id=$(ARM_SUBSCRIPTION_ID)" \
+          -var "client_id=$(ARM_CLIENT_ID)" \
+          -var "client_secret=$(ARM_CLIENT_SECRET)" \
+          -var "tenant_id=$(ARM_TENANT_ID)" \
+          packer/
+      displayName: 'Run Packer Build'
+      env:
+        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+        ARM_TENANT_ID: $(ARM_TENANT_ID)
+    
 #    - task: AzureCLI@2
 #      displayName: 'Tag Generated Image'
 #      inputs:
