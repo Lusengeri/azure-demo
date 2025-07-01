@@ -120,6 +120,7 @@ stages:
         export PKR_VAR_build_id="$(Build.BuildId)"
         export PKR_VAR_source_branch="$(Build.SourceBranchName)"
         
+        packer init packer/
         packer build \
           -var "subscription_id=$(ARM_SUBSCRIPTION_ID)" \
           -var "client_id=$(ARM_CLIENT_ID)" \
