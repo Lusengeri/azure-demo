@@ -63,7 +63,7 @@ stages:
 - stage: BuildImage
   displayName: 'Build Packer Image'
   dependsOn: ValidatePacker
-  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'], 'Manual')))
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['Build.Reason'], 'Manual')))
   
   jobs:
   - job: PackerBuild
