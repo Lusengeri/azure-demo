@@ -34,11 +34,29 @@ stages:
       displayName: 'Install Packer'
       inputs:
         version: $(packerVersion)
-    
+
+    - task: AzureCLI@2
+      displayName: 'Get Azure Credentials for Packer'
+      inputs:
+        azureSubscription: 'Demo App Azure DevOps Connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        addSpnToEnvironment: true
+        inlineScript: |
+          echo "##vso[task.setvariable variable=ARM_CLIENT_ID;issecret=false]$servicePrincipalId"
+          echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET;issecret=true]$servicePrincipalKey"
+          echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;issecret=false]$(az account show --query id -o tsv)"
+          echo "##vso[task.setvariable variable=ARM_TENANT_ID;issecret=false]$tenantId"   
+
     - script: |
         echo "Validating Packer templates..."
         packer init .
-        packer validate -var "resource_group_name=$(resourceGroupName)" .
+        packer validate \
+          -var "subscription_id=$(ARM_SUBSCRIPTION_ID)" \
+          -var "client_id=$(ARM_CLIENT_ID)" \
+          -var "client_secret=$(ARM_CLIENT_SECRET)" \
+          -var "tenant_id=$(ARM_TENANT_ID)" \
+          -var "resource_group_name=$(resourceGroupName)" .
       displayName: 'Validate Packer Templates'
       workingDirectory: '$(System.DefaultWorkingDirectory)/packer'
 
