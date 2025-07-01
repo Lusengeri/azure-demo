@@ -32,7 +32,7 @@ source "azure-arm" "ubuntu" {
   subscription_id = var.subscription_id
   tenant_id       = var.tenant_id
 
-  use_azure_cli_auth = true
+  use_azure_cli_auth = false
   vm_size            = "Standard_A2_v2"
 }
 
